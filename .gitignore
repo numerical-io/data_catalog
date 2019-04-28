@@ -1,0 +1,14 @@
+*.pyc
+*.egg-info/
+.cache
+.eggs
+.idea/
+.vscode
+.DS_Store
+__pycache__
+/docs/_*
+/dist
+.pytest_cache
+/sandbox
+*.pdf
+*.jpg
