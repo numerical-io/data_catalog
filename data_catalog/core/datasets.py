@@ -48,9 +48,8 @@ class FileDataset(AbstractDataset):
     This class is abstract.
 
     A dataset can be created either with the constructor, or with the factory
-    method `from_parents`. In general, the first form is more convenient when
-    the file is defined from an existing file on disk, while the second form is
-    only applicable to datasets created from parent datasets.
+    method `from_parents`. This second form only applies to datasets defined
+    by a transformation of other datasets.
 
     Attributes:
         filesystem (AbstractFileSystem-like): filesystem on which the file
@@ -114,7 +113,7 @@ class FileDataset(AbstractDataset):
             return self._read(file, **self._read_kwargs)
 
     def write(self, df):
-        """Read the dataset to disk.
+        """Write the dataset to disk.
 
         Args:
             df (pandas.DataFrame): dataset, to write on disk.
@@ -154,7 +153,7 @@ class FileDataset(AbstractDataset):
         return self.file_system.last_update_time(self._relpath)
 
     def exists(self):
-        """Retrun whether the dataset exists.
+        """Return whether the dataset exists.
         """
         return self.file_system.exists(self._relpath)
 
@@ -172,8 +171,9 @@ class FileDataset(AbstractDataset):
 
     @classmethod
     def from_parents(cls, description='', name=None, parents=None):
-        """Define a dataset based on the function to create if from its parents.
+        """Define a dataset based on the function to create it from its parents.
 
+        This method is meant to decorate a function creating a dataset.
         Dataset name and parents are inferred from the function name and
         argument names, unless they are provided explicitely.
 
