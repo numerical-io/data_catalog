@@ -3,7 +3,7 @@
 """
 import logging
 
-from dask.multiprocessing import get
+from dask.threaded import get
 import dask
 
 
@@ -21,16 +21,17 @@ def _create_task(catalog, target):
         Arguments of this function are set by Dask but not used, because data
         is passed on disk rather than in memory.
         """
-        # Do nothing if the dataset has no parent : the dataset cannot change
+        # Do nothing if the dataset exists and has no parent : the dataset
+        # cannot change
         if not parents:
-            return
-
-        # Check whether the dataset needs updating
-        target_date = catalog[target].last_update_time()
-        max_parent_date = max([
-            catalog[parent].last_update_time()
-            for parent in parents])
-        needs_update = target_date < max_parent_date
+            needs_update = not catalog[target].exists()
+        else:
+            # Check whether the dataset needs updating
+            target_date = catalog[target].last_update_time()
+            max_parent_date = max([
+                catalog[parent].last_update_time()
+                for parent in parents])
+            needs_update = target_date < max_parent_date
 
         if needs_update:
             logger.info('Create dataset {}'.format(target))
