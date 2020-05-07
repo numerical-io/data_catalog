@@ -5,8 +5,9 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from data_catalog.core import DataCatalog, FileDataset, CsvDataset, ParquetDataset, \
-    Pipeline, LocalFileSystem
+from data_catalog.core import DataCatalog, FileDataset, CsvDataset, \
+    ParquetDataset, Pipeline
+from data_catalog.file_systems import LocalFileSystem
 from data_catalog.core.datasets import AbstractDataset
 from data_catalog.core.pipeline import _create_task
 

@@ -11,7 +11,7 @@ import inspect
 
 import pandas as pd
 
-from .file_systems import AbstractFileSystem, LocalFileSystem, S3FileSystem
+from ..file_systems import AbstractFileSystem, LocalFileSystem, S3FileSystem
 
 
 DATASET_CATEGORIES = {
