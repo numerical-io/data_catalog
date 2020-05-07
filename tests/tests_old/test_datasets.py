@@ -170,7 +170,7 @@ class TestCsvDataset:
         assert df.equals(imported_df)
 
     def should_read(self):
-        fs_root = Path(__file__).parent/'examples/datasets'
+        fs_root = Path(__file__).parent.parent/'examples/datasets'
         FileDataset.file_system = LocalFileSystem(fs_root)
         a = CsvDataset('raw_dataset', relpath='raw_dataset.csv')
         df = a.read()
@@ -178,7 +178,7 @@ class TestCsvDataset:
         assert df.shape == (2, 3)
 
     def should_read_with_kwargs(self):
-        fs_root = Path(__file__).parent/'examples/datasets'
+        fs_root = Path(__file__).parent.parent/'examples/datasets'
         FileDataset.file_system = LocalFileSystem(fs_root)
         a = CsvDataset(
             'raw_dataset', relpath='raw_dataset.csv',
@@ -203,7 +203,7 @@ class TestCsvDataset:
         assert (last_update_time != 0) and isinstance(last_update_time, float)
 
     def should_tell_if_exists(self):
-        fs_root = Path(__file__).parent/'examples/datasets'
+        fs_root = Path(__file__).parent.parent/'examples/datasets'
         FileDataset.file_system = LocalFileSystem(fs_root)
         a = CsvDataset('raw_dataset', relpath='raw_dataset.csv')
         assert a.exists()
