@@ -2,7 +2,7 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from data_catalog import LocalFileSystem, S3FileSystem, \
+from data_catalog.core import LocalFileSystem, S3FileSystem, \
     create_filesystem_from_path
 
 

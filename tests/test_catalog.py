@@ -1,6 +1,6 @@
 import pytest
 
-from data_catalog import DataCatalog, CsvDataset
+from data_catalog.core import DataCatalog, CsvDataset
 
 
 class TestDataCatalog:

@@ -5,7 +5,7 @@ import pandas as pd
 
 import data_catalog.core.datasets as ds
 from data_catalog.core.datasets import AbstractDataset
-from data_catalog import FileDataset, CsvDataset, LocalFileSystem
+from data_catalog.core import FileDataset, CsvDataset, LocalFileSystem
 
 
 class TestFindMandatoryArguments:
