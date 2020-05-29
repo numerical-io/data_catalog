@@ -11,7 +11,7 @@ class MetaCollection(ABCMetaCollection):
     def __new__(mcs, name, bases, attrs, **kwargs):
 
         # Check presence of mandatory attributes
-        mandatory_attributes = {"key_store", "Item"}
+        mandatory_attributes = {"keys", "Item"}
         missing_attributes = mandatory_attributes.difference(attrs)
         if missing_attributes:
             msg = f"These attributes are missing: {missing_attributes}."
@@ -33,7 +33,7 @@ class MetaCollection(ABCMetaCollection):
 
 class AbstractCollection(metaclass=MetaCollection):
 
-    key_store = lambda self: set()
+    keys = None
 
     class Item:
         pass
@@ -79,9 +79,6 @@ class AbstractCollection(metaclass=MetaCollection):
         }
         return attributes
 
-    def keys(self):
-        return set(self.key_store())
-
     def __hash__(self):
         return hash(self.catalog_path())
 
@@ -112,7 +109,7 @@ class MetaFolderCollection(MetaCollection):
 
 class FolderCollection(AbstractCollection, metaclass=MetaFolderCollection):
 
-    key_store = None
+    keys = None
 
     class Item:
         pass

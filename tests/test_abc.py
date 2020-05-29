@@ -16,7 +16,7 @@ def some_dataset():
 @pytest.fixture
 def some_collection():
     class MyCollection(dc.AbstractCollection):
-        key_store = {"key_parent_a", "key_parent_b"}
+        keys = lambda self: ["key_parent_a", "key_parent_b"]
 
         class Item(dd.AbstractDataset):
             pass
@@ -30,8 +30,9 @@ class TestIsDataset:
         assert not is_dataset(some_collection)
 
     def should_recognize_instance(self, some_dataset, some_collection):
-        assert is_dataset(some_dataset())
-        assert not is_dataset(some_collection())
+        context = {}
+        assert is_dataset(some_dataset(context))
+        assert not is_dataset(some_collection(context))
 
 class TestIsCollection:
     def should_recognize_class(self, some_dataset, some_collection):
@@ -39,5 +40,6 @@ class TestIsCollection:
         assert not is_collection(some_dataset)
 
     def should_recognize_instance(self, some_dataset, some_collection):
-        assert is_collection(some_collection())
-        assert not is_collection(some_dataset())
+        context = {}
+        assert is_collection(some_collection(context))
+        assert not is_collection(some_dataset(context))

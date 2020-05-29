@@ -14,7 +14,7 @@ def misc_collection():
         parents = []
 
     class ParentCollection(dc.AbstractCollection):
-        key_store = lambda self: {"key_parent_a", "key_parent_b"}
+        keys = lambda self: ["key_parent_a", "key_parent_b"]
 
         class Item(dd.AbstractDataset):
             pass
@@ -23,7 +23,7 @@ def misc_collection():
         """This is a docstring.
         """
 
-        key_store = lambda self: ["key_a", "key_b"]
+        keys = lambda self: ["key_a", "key_b"]
 
         class Item(dd.AbstractDataset):
             parents = [ParentDataset, ParentCollection]
@@ -36,7 +36,7 @@ def misc_collection():
 
 class TestAbstractCollection:
     def should_have_mandatory_attributes(self):
-        # Missing key_store
+        # Missing keys
         with pytest.raises(ValueError):
 
             class MyCollection(dc.AbstractCollection):
@@ -47,7 +47,7 @@ class TestAbstractCollection:
         with pytest.raises(ValueError):
 
             class MyCollection(dc.AbstractCollection):
-                key_store = None
+                keys = None
 
     def should_infer_its_name(self, misc_collection):
         assert misc_collection.name() == "MyCollection"
@@ -59,7 +59,7 @@ class TestAbstractCollection:
         assert misc_collection.description() == "This is a docstring."
 
     def should_list_keys(self, misc_collection):
-        assert misc_collection({}).keys() == {"key_a", "key_b"}
+        assert misc_collection({}).keys() == ["key_a", "key_b"]
 
     def should_create_class_for_each_item(self, misc_collection):
         assert issubclass(misc_collection.get("key_a"), misc_collection.Item)
@@ -89,7 +89,7 @@ class TestAbstractCollection:
 
     def should_be_singleton_class(self, misc_collection):
         class OtherCollection(dc.AbstractCollection):
-            key_store = {"key_parent_a", "key_parent_b"}
+            keys = {"key_parent_a", "key_parent_b"}
 
             class Item(dd.AbstractDataset):
                 pass
@@ -122,7 +122,7 @@ def folder_collection():
 
     class MyCollection(dc.FolderCollection):
         relative_path = "datasets"
-        key_store = du.keys_from_folder("datasets/dir_to_list")
+        keys = du.keys_from_folder("datasets/dir_to_list")
 
         class Item(dd.FileDataset):
             parents = [ParentDataset]
@@ -141,7 +141,7 @@ class TestFolderCollection:
 
     def should_infer_missing_relative_path(self, tmpdir):
         class MyCollection(dc.FolderCollection):
-            key_store = None
+            keys = None
             Item = None
 
         relative_path = MyCollection.relative_path.as_posix()
@@ -149,7 +149,7 @@ class TestFolderCollection:
 
     def should_ensure_relative_path_is_path_object(self):
         class MyCollection(dc.FolderCollection):
-            key_store = None
+            keys = None
             relative_path = "test_datasets/MyCollection"
             Item = None
 
