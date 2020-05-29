@@ -120,7 +120,7 @@ def folder_collection():
     class ParentDataset(dd.AbstractDataset):
         parents = []
 
-    class MyCollection(dc.FolderCollection):
+    class MyCollection(dc.FileCollection):
         relative_path = "datasets"
         keys = du.keys_from_folder("datasets/dir_to_list")
 
@@ -133,14 +133,14 @@ def folder_collection():
     return MyCollection
 
 
-class TestFolderCollection:
+class TestFileCollection:
     def should_list_keys_from_folder(self, folder_collection):
         datasets_path = Path(__file__).parent / "examples"
         context = {"catalog_uri": datasets_path.absolute().as_uri()}
         assert folder_collection(context).keys() == {"file_a", "file_b"}
 
     def should_infer_missing_relative_path(self, tmpdir):
-        class MyCollection(dc.FolderCollection):
+        class MyCollection(dc.FileCollection):
             keys = None
             Item = None
 
@@ -148,7 +148,7 @@ class TestFolderCollection:
         assert relative_path == "MyCollection"
 
     def should_ensure_relative_path_is_path_object(self):
-        class MyCollection(dc.FolderCollection):
+        class MyCollection(dc.FileCollection):
             keys = None
             relative_path = "test_datasets/MyCollection"
             Item = None
@@ -168,5 +168,5 @@ class TestFolderCollection:
 
     def should_save_context(self, tmpdir):
         context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
-        a = dc.FolderCollection(context)
+        a = dc.FileCollection(context)
         assert a.context == context

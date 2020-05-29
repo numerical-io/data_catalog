@@ -91,7 +91,7 @@ class AbstractCollection(metaclass=MetaCollection):
             raise NotImplemented()
 
 
-class MetaFolderCollection(MetaCollection):
+class MetaFileCollection(MetaCollection):
     def __new__(mcs, name, bases, attrs, **kwargs):
         if "relative_path" in attrs:
             # Ensure relative path is PurePath object
@@ -107,7 +107,7 @@ class MetaFolderCollection(MetaCollection):
         return super().__new__(mcs, name, bases, attrs, **kwargs)
 
 
-class FolderCollection(AbstractCollection, metaclass=MetaFolderCollection):
+class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
     keys = None
 
