@@ -79,13 +79,15 @@ class TestAbstractCollection:
     ):
         item = misc_collection.get("key_a")
         assert item.__doc__ == misc_collection.__doc__
-        assert item.__module__ == misc_collection.__module__
+        assert item._catalog_module == misc_collection._catalog_module
         assert item.name() == misc_collection.name() + ":key_a"
         assert item.catalog_path() == misc_collection.catalog_path() + ":key_a"
 
     def should_have_same_class_and_object_hash(self, misc_collection):
         assert hash(misc_collection) == hash("test_collections.MyCollection")
-        assert hash(misc_collection({})) == hash("test_collections.MyCollection")
+        assert hash(misc_collection({})) == hash(
+            "test_collections.MyCollection"
+        )
 
     def should_be_singleton_class(self, misc_collection):
         class OtherCollection(dc.AbstractCollection):
@@ -113,6 +115,18 @@ class TestAbstractCollection:
         context = {"a": 1, "b": 2}
         a = misc_collection(context)
         assert a.context == context
+
+    def should_allow_inheritance(self, misc_collection):
+        collection_copy = type(
+            misc_collection.__name__,
+            (misc_collection,),
+            {
+                "Item": misc_collection.Item,
+                "keys": misc_collection.keys,
+                "_catalog_module": misc_collection._catalog_module,
+            },
+        )
+        assert collection_copy.catalog_path() == misc_collection.catalog_path()
 
 
 @pytest.fixture

@@ -17,6 +17,10 @@ class MetaCollection(ABCMetaCollection):
             msg = f"These attributes are missing: {missing_attributes}."
             raise ValueError(msg)
 
+        # Set path in catalog from module path, if not set
+        if "_catalog_module" not in attrs:
+            attrs["_catalog_module"] = attrs['__module__']
+
         return super().__new__(mcs, name, bases, attrs)
 
     def __hash__(self):
@@ -54,12 +58,12 @@ class AbstractCollection(metaclass=MetaCollection):
 
     @classmethod
     def catalog_path(cls):
-        return f"{cls.__module__}.{cls.__name__}"
+        return f"{cls._catalog_module}.{cls.__name__}"
 
     @classmethod
     def get(cls, key):
         attributes = cls._set_item_attributes(cls, key)
-        item_cls = type(f"{cls.__name__}:{key}", (cls.Item,), attributes)
+        item_cls = type(f"{cls.name()}:{key}", (cls.Item,), attributes)
         return item_cls
 
     @staticmethod
@@ -70,7 +74,7 @@ class AbstractCollection(metaclass=MetaCollection):
         ]
         attributes = {
             "__doc__": cls.__doc__,
-            "__module__": cls.__module__,
+            "_catalog_module": cls._catalog_module,
             "key": key,
             # parents and create must be explicitely set, because they are
             # not inherited (as set in dataset metaclass)
@@ -96,15 +100,18 @@ class MetaFileCollection(MetaCollection):
         if "relative_path" in attrs:
             # Ensure relative path is PurePath object
             attrs["relative_path"] = PurePath(attrs["relative_path"])
-        else:
-            # We do not let relative_path be inherited from other objects.
-            # Therefore, we infer its value and include it in attrs.
-            parent_dirpath = PurePath(
-                "/".join(attrs["__module__"].split(".")[1:])
-            )
-            attrs["relative_path"] = parent_dirpath / name
 
-        return super().__new__(mcs, name, bases, attrs, **kwargs)
+        cls = super().__new__(mcs, name, bases, attrs, **kwargs)
+
+        # We do not let relative_path be inherited from other objects.
+        # Therefore, if it was missing in attrs, we override its value here.
+        if "relative_path" not in attrs:
+            parent_dirpath = PurePath(
+                "/".join(cls._catalog_module.split(".")[1:])
+            )
+            setattr(cls, "relative_path", parent_dirpath / name)
+
+        return cls
 
 
 class FileCollection(AbstractCollection, metaclass=MetaFileCollection):

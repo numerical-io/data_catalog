@@ -50,6 +50,10 @@ class MetaDataset(ABCMetaDataset):
                 msg = "The items in `parents` must be datasets or collections."
                 raise ValueError(msg)
 
+        # Set path in catalog from module path, if not set
+        if "_catalog_module" not in attrs:
+            attrs["_catalog_module"] = attrs['__module__']
+
         return super().__new__(mcs, name, bases, attrs)
 
     def __hash__(self):
@@ -84,7 +88,7 @@ class AbstractDataset(metaclass=MetaDataset):
 
     @classmethod
     def catalog_path(cls):
-        return f"{cls.__module__}.{cls.__name__}"
+        return f"{cls._catalog_module}.{cls.__name__}"
 
     def __hash__(self):
         return hash(self.catalog_path())
@@ -110,7 +114,7 @@ class MetaFileDataset(MetaDataset):
         # We do not let relative_path be inherited from other objects.
         # Therefore, if it was missing in attrs, we override its value here.
         if "relative_path" not in attrs:
-            dirpath = PurePath("/".join(attrs["__module__"].split(".")[1:]))
+            dirpath = PurePath("/".join(cls._catalog_module.split(".")[1:]))
             file_extension = getattr(cls, "file_extension")
             filename = f"{name}.{file_extension}"
             setattr(cls, "relative_path", dirpath / filename)
@@ -130,7 +134,7 @@ class FileDataset(AbstractDataset, metaclass=MetaFileDataset):
         kwargs = context.get("fs_kwargs", {})
         self.file_system = create_filesystem_from_uri(uri, **kwargs)
         super().__init__(context)
-        
+
     def read(self):
         """Read the dataset on disk.
 
