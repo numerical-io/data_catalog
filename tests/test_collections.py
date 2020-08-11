@@ -143,11 +143,12 @@ def folder_collection():
         parents = []
 
     class MyCollection(dc.FileCollection):
-        relative_path = "datasets"
+        relative_path = "datasets/dir_to_list"
         keys = du.keys_from_folder("datasets/dir_to_list")
 
-        class Item(dd.FileDataset):
+        class Item(dd.CsvDataset):
             parents = [ParentDataset]
+            file_extension = "dat"
 
             def create(self, x):
                 return x
@@ -185,10 +186,22 @@ class TestFileCollection:
     ):
         assert (
             folder_collection.get("key_a").relative_path.as_posix()
-            == "datasets/key_a.dat"
+            == "datasets/dir_to_list/key_a.dat"
         )
 
     def should_save_context(self, tmpdir):
         context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
         a = dc.FileCollection(context)
         assert a.context == context
+
+    def should_let_read_datasets(self, folder_collection):
+        datasets_path = Path(__file__).parent / "examples"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        all_dfs = folder_collection(context).read()
+        assert all_dfs.keys() == {"file_a", "file_b"}
+        assert all_dfs["file_b"].shape == (2, 3)
+        assert all_dfs["file_b"].columns.tolist() == ["a", "b", "c"]
+
+        df_a = folder_collection(context).read(["file_a"])
+        assert df_a.keys() == {"file_a"}

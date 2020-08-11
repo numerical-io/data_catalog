@@ -97,6 +97,9 @@ class AbstractCollection(metaclass=MetaCollection):
         else:
             raise NotImplemented()
 
+    def read(self, keys=None):
+        raise NotImplemented()
+
 
 class MetaFileCollection(MetaCollection):
     def __new__(mcs, name, bases, attrs, **kwargs):
@@ -138,3 +141,10 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
             PurePath(cls.relative_path) / f"{key}.{cls.Item.file_extension}"
         )
         return attributes
+
+    def read(self, keys=None):
+        if keys is None:
+            keys = self.keys()
+
+        all_dfs = {key: self.get(key)(self.context).read() for key in keys}
+        return all_dfs
