@@ -69,7 +69,7 @@ class AbstractCollection(metaclass=MetaCollection):
     @staticmethod
     def _set_item_attributes(cls, key):
         parents = [
-            parent.get(key) if isinstance(parent, ABCMetaCollection) else parent
+            parent.get(key) if is_collection(parent) else parent
             for parent in cls.Item.parents
         ]
         attributes = {

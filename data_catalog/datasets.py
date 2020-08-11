@@ -44,9 +44,7 @@ class MetaDataset(ABCMetaDataset):
 
         # Check that parents are datasets or collections
         for parent in attrs["parents"]:
-            is_dataset = isinstance(parent, ABCMetaDataset)
-            is_collection = isinstance(parent, ABCMetaCollection)
-            if not (is_dataset or is_collection):
+            if not (is_dataset(parent) or is_collection(parent)):
                 msg = "The items in `parents` must be datasets or collections."
                 raise ValueError(msg)
 
