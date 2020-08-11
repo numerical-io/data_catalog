@@ -64,6 +64,14 @@ class TestAbstractCollection:
     def should_create_class_for_each_item(self, misc_collection):
         assert issubclass(misc_collection.get("key_a"), misc_collection.Item)
 
+    def should_let_create_multiple_items(self, misc_collection):
+        several_items = misc_collection.get(["key_a", "key_b"])
+        assert isinstance(several_items, dict)
+        assert set(several_items.keys()) == {"key_a", "key_b"}
+        assert issubclass(
+            several_items["key_a"], misc_collection.Item
+        )
+
     def should_link_item_to_parent_item(self, misc_collection):
         # If the collection has a collection as parent,
         # then an item of the collection must has as parent an item of the

@@ -19,7 +19,7 @@ class MetaCollection(ABCMetaCollection):
 
         # Set path in catalog from module path, if not set
         if "_catalog_module" not in attrs:
-            attrs["_catalog_module"] = attrs['__module__']
+            attrs["_catalog_module"] = attrs["__module__"]
 
         return super().__new__(mcs, name, bases, attrs)
 
@@ -62,6 +62,9 @@ class AbstractCollection(metaclass=MetaCollection):
 
     @classmethod
     def get(cls, key):
+        if isinstance(key, list) or isinstance(key, set):
+            return {k: cls.get(k) for k in key}
+
         attributes = cls._set_item_attributes(cls, key)
         item_cls = type(f"{cls.name()}:{key}", (cls.Item,), attributes)
         return item_cls
