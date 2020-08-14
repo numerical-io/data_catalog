@@ -68,9 +68,7 @@ class TestAbstractCollection:
         several_items = misc_collection.get(["key_a", "key_b"])
         assert isinstance(several_items, dict)
         assert set(several_items.keys()) == {"key_a", "key_b"}
-        assert issubclass(
-            several_items["key_a"], misc_collection.Item
-        )
+        assert issubclass(several_items["key_a"], misc_collection.Item)
 
     def should_link_item_to_parent_item(self, misc_collection):
         # If the collection has a collection as parent,
@@ -205,3 +203,79 @@ class TestFileCollection:
 
         df_a = folder_collection(context).read(["file_a"])
         assert df_a.keys() == {"file_a"}
+
+
+@pytest.fixture
+def collection_to_filter():
+    class MyCollection(dc.FileCollection):
+        def keys(self):
+            return ["a1", "a2", "b1"]
+
+        class Item(dd.FileDataset):
+            parents = []
+
+            def create(self):
+                return pd.DataFrame([{"c": 2}, {"c": 4}])
+
+    return MyCollection
+
+
+@pytest.fixture
+def filtered_collection(collection_to_filter):
+    def filter_func(child_key, parent_key):
+        return parent_key[0] == child_key
+
+    my_filter = dc.CollectionFilter(collection_to_filter, filter_func)
+    filtered_collection = my_filter.filter_by("a")
+    return filtered_collection
+
+
+class TestCollectionFilter:
+    def should_create_filtered_collection(
+        self, collection_to_filter, filtered_collection
+    ):
+
+        # Build a context, with catalog URI pointing to any folder (not used)
+        datasets_path = Path(__file__).parent / "examples"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        assert set(filtered_collection(context).keys()) == {"a1", "a2"}
+        assert filtered_collection.__doc__ == collection_to_filter.__doc__
+
+        # Check name
+        original_name, suffix = filtered_collection.name().split(":")
+        assert original_name == collection_to_filter.name()
+        assert suffix.startswith("filter")
+
+        # Check catalog path
+        assert (
+            filtered_collection._catalog_module
+            == collection_to_filter._catalog_module
+        )
+        assert (
+            filtered_collection.catalog_path()
+            == collection_to_filter.catalog_path() + ":" + suffix
+        )
+
+    def should_make_filtered_collection_distinct_from_original(
+        self, collection_to_filter, filtered_collection
+    ):
+        assert filtered_collection != collection_to_filter
+        assert (
+            filtered_collection.catalog_path()
+            != collection_to_filter.catalog_path()
+        )
+
+    def should_create_same_datasets_as_original_collection(
+        self, collection_to_filter, filtered_collection
+    ):
+        ds_from_filtered = filtered_collection.get("a1")
+        ds_from_original = collection_to_filter.get("a1")
+
+        assert ds_from_filtered == ds_from_original
+        assert issubclass(ds_from_filtered, collection_to_filter.Item)
+        assert ds_from_filtered.name() == ds_from_original.name()
+        assert (
+            ds_from_filtered.catalog_path() == ds_from_original.catalog_path()
+        )
+        assert ds_from_filtered.relative_path == ds_from_original.relative_path

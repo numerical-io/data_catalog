@@ -1,6 +1,10 @@
 import pytest
 
-from data_catalog.abc import is_dataset, is_collection
+from data_catalog.abc import (
+    is_dataset,
+    is_collection,
+    is_collection_filter,
+)
 import data_catalog.datasets as dd
 import data_catalog.collections as dc
 
@@ -34,6 +38,7 @@ class TestIsDataset:
         assert is_dataset(some_dataset(context))
         assert not is_dataset(some_collection(context))
 
+
 class TestIsCollection:
     def should_recognize_class(self, some_dataset, some_collection):
         assert is_collection(some_collection)
@@ -43,3 +48,14 @@ class TestIsCollection:
         context = {}
         assert is_collection(some_collection(context))
         assert not is_collection(some_dataset(context))
+
+
+class TestIsCollectionFilter:
+    def should_recognize_instance(self, some_collection):
+        context = {}
+        my_filter = dc.CollectionFilter(
+            some_collection, lambda a, b: True
+        )
+        assert is_collection_filter(my_filter)
+        assert not is_collection_filter(some_collection)
+        assert not is_collection_filter(some_collection(context))

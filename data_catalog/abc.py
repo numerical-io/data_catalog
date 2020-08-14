@@ -13,6 +13,10 @@ class ABCMetaCollection(ABCMeta):
     pass
 
 
+class ABCCollectionFilter(ABC):
+    pass
+
+
 class ABCFileSystem(ABC):
     pass
 
@@ -25,3 +29,7 @@ def is_dataset(x):
 def is_collection(x):
     x_class = x if inspect.isclass(x) else type(x)
     return isinstance(x_class, ABCMetaCollection)
+
+
+def is_collection_filter(x):
+    return isinstance(x, ABCCollectionFilter)

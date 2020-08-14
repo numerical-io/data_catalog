@@ -2,8 +2,15 @@
 
 """
 from pathlib import PurePath
+import uuid
 
-from .abc import ABCMetaCollection, is_dataset, is_collection
+from .abc import (
+    ABCMetaCollection,
+    ABCCollectionFilter,
+    is_dataset,
+    is_collection,
+    is_collection_filter,
+)
 from .file_systems import create_filesystem_from_uri
 
 
@@ -66,7 +73,8 @@ class AbstractCollection(metaclass=MetaCollection):
             return {k: cls.get(k) for k in key}
 
         attributes = cls._set_item_attributes(cls, key)
-        item_cls = type(f"{cls.name()}:{key}", (cls.Item,), attributes)
+        base_name = cls.name().split(":")[0]
+        item_cls = type(f"{base_name}:{key}", (cls.Item,), attributes)
         return item_cls
 
     @staticmethod
@@ -148,3 +156,39 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
         all_dfs = {key: self.get(key)(self.context).read() for key in keys}
         return all_dfs
+
+
+class CollectionFilter(ABCCollectionFilter):
+    def __init__(self, collection, func):
+        self.collection = collection
+        self.func = func
+
+    def filter_by(self, child_key):
+        # Define function to filter keys of parent, parametrized by child key
+        def filter_func(parent_key):
+            return self.func(child_key, parent_key)
+
+        # Define the .keys() method for the filtered collection
+        def keys(collection_self):
+            original_keys = super(
+                collection_self.__class__, collection_self
+            ).keys()
+
+            return [key for key in original_keys if filter_func(key)]
+
+        # Create the class for the filtered collection
+        # The filtered collection inherits the original collection. Some
+        # attributes must be nonetheless specified explicitely, to follow
+        # the logic of the metaclass.
+        filtered_collection = type(
+            self.collection.__name__ + ":filter" + uuid.uuid4().hex,
+            (self.collection,),
+            {
+                "_catalog_module": self.collection._catalog_module,
+                "Item": self.collection.Item,
+                "keys": keys,
+                "__doc__": self.collection.__doc__,
+                "relative_path": self.collection.relative_path,
+            },
+        )
+        return filtered_collection
