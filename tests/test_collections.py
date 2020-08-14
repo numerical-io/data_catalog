@@ -98,7 +98,8 @@ class TestAbstractCollection:
 
     def should_be_singleton_class(self, misc_collection):
         class OtherCollection(dc.AbstractCollection):
-            keys = {"key_parent_a", "key_parent_b"}
+            def keys(self):
+                return ["key_parent_a", "key_parent_b"]
 
             class Item(dd.AbstractDataset):
                 pass
@@ -135,6 +136,23 @@ class TestAbstractCollection:
         )
         assert collection_copy.catalog_path() == misc_collection.catalog_path()
 
+    def should_validate_keys_method(self):
+        with pytest.raises(Exception):
+            class SomeCollection(dc.AbstractCollection):
+                keys = lambda : ["a", "b"]
+                class Item(dd.AbstractDataset):
+                    pass
+
+
+class TestValidateKeysMethod:
+    def should_be_callable(self):
+        with pytest.raises(TypeError):
+            dc._validate_keys_method("some_non_callable")
+
+    def should_have_single_argument(self):
+        with pytest.raises(ValueError):
+            dc._validate_keys_method(lambda: 3)
+
 
 @pytest.fixture
 def folder_collection():
@@ -163,7 +181,7 @@ class TestFileCollection:
 
     def should_infer_missing_relative_path(self, tmpdir):
         class MyCollection(dc.FileCollection):
-            keys = None
+            keys = lambda self: []
             Item = None
 
         relative_path = MyCollection.relative_path.as_posix()
@@ -171,7 +189,7 @@ class TestFileCollection:
 
     def should_ensure_relative_path_is_path_object(self):
         class MyCollection(dc.FileCollection):
-            keys = None
+            keys = lambda self: []
             relative_path = "test_datasets/MyCollection"
             Item = None
 

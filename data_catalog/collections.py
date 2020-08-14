@@ -3,6 +3,7 @@
 """
 from pathlib import PurePath
 import uuid
+import inspect
 
 from .abc import (
     ABCMetaCollection,
@@ -24,6 +25,9 @@ class MetaCollection(ABCMetaCollection):
             msg = f"These attributes are missing: {missing_attributes}."
             raise ValueError(msg)
 
+        # Validate the keys attribute
+        _validate_keys_method(attrs["keys"])
+
         # Set path in catalog from module path, if not set
         if "_catalog_module" not in attrs:
             attrs["_catalog_module"] = attrs["__module__"]
@@ -42,9 +46,21 @@ class MetaCollection(ABCMetaCollection):
             raise NotImplemented()
 
 
+def _validate_keys_method(keys):
+    if callable(keys):
+        num_args = len(inspect.signature(keys).parameters)
+        if num_args != 1:
+            raise ValueError(
+                "The keys method must have a single argument (self)."
+            )
+    else:
+        raise TypeError("The keys attribute must be a callable.")
+
+
 class AbstractCollection(metaclass=MetaCollection):
 
-    keys = None
+    def keys(self):
+        pass
 
     class Item:
         pass
@@ -130,7 +146,8 @@ class MetaFileCollection(MetaCollection):
 
 class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
-    keys = None
+    def keys(self):
+        pass
 
     class Item:
         pass
