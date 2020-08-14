@@ -6,6 +6,7 @@ import pandas as pd
 import data_catalog.collections as dc
 import data_catalog.datasets as dd
 import data_catalog.utils as du
+import data_catalog.abc as da
 
 
 @pytest.fixture
@@ -279,3 +280,23 @@ class TestCollectionFilter:
             ds_from_filtered.catalog_path() == ds_from_original.catalog_path()
         )
         assert ds_from_filtered.relative_path == ds_from_original.relative_path
+
+
+class TestSingleDatasetFilter:
+    def should_return_single_dataset(self, collection_to_filter):
+        my_filter = dc.SingleDatasetFilter(collection_to_filter)
+        dataset = my_filter.filter_by("b1")
+
+        assert dataset.key == "b1"
+
+    def should_be_recognized_as_filter(self, collection_to_filter):
+        my_filter = dc.SingleDatasetFilter(collection_to_filter)
+        assert da.is_collection_filter(my_filter)
+
+
+class TestSameKeyIn:
+    def should_return_single_dataset(self, collection_to_filter):
+        my_filter = dc.same_key_in(collection_to_filter)
+        dataset = my_filter.filter_by("b1")
+
+        assert dataset.key == "b1"

@@ -192,3 +192,15 @@ class CollectionFilter(ABCCollectionFilter):
             },
         )
         return filtered_collection
+
+
+class SingleDatasetFilter(ABCCollectionFilter):
+    def __init__(self, collection):
+        self.collection = collection
+
+    def filter_by(self, child_key):
+        return self.collection.get(child_key)
+
+
+def same_key_in(collection):
+    return SingleDatasetFilter(collection)
