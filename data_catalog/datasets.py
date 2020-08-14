@@ -7,7 +7,13 @@ import pickle
 
 import pandas as pd
 
-from .abc import ABCMetaDataset, ABCMetaCollection, is_dataset, is_collection
+from .abc import (
+    ABCMetaDataset,
+    ABCMetaCollection,
+    is_dataset,
+    is_collection,
+    is_collection_filter,
+)
 from .file_systems import (
     LocalFileSystem,
     S3FileSystem,
@@ -42,15 +48,22 @@ class MetaDataset(ABCMetaDataset):
                 f" while `parents` has length {num_parents}."
             )
 
-        # Check that parents are datasets or collections
+        # Check that parents are datasets or collections or filters
         for parent in attrs["parents"]:
-            if not (is_dataset(parent) or is_collection(parent)):
-                msg = "The items in `parents` must be datasets or collections."
+            if not (
+                is_dataset(parent)
+                or is_collection(parent)
+                or is_collection_filter(parent)
+            ):
+                msg = (
+                    "The items in `parents` must be datasets, "
+                    "collections, or collection filters."
+                )
                 raise ValueError(msg)
 
         # Set path in catalog from module path, if not set
         if "_catalog_module" not in attrs:
-            attrs["_catalog_module"] = attrs['__module__']
+            attrs["_catalog_module"] = attrs["__module__"]
 
         return super().__new__(mcs, name, bases, attrs)
 
