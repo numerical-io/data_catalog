@@ -1,6 +1,9 @@
+import sys
 import pytest
 from pathlib import Path
 
+import data_catalog
+import data_catalog.datasets as ds
 import data_catalog.utils as du
 import data_catalog.file_systems as df
 
@@ -36,5 +39,44 @@ class TestKeysFromFolder:
             file_system = df.LocalFileSystem(
                 Path(__file__).parent / "examples" / "datasets"
             )
+
         iterator = du.keys_from_folder("dir_to_list")
         assert iterator(ClassWithFileSystem()) == {"file_a", "file_b"}
+
+
+class DummyDataset(ds.FileDataset):
+    """A Dataset for testing catalog lists."""
+
+    pass
+
+
+def dummy_function():
+    pass
+
+
+class TestIsSubModule:
+    def should_recognize_submodules_only(self):
+        assert du.is_sub_module(du, data_catalog)
+        assert not du.is_sub_module(data_catalog, du)
+        assert not du.is_sub_module(du, du)
+        assert not du.is_sub_module(du, pytest)
+
+
+class TestIsMemberClass:
+    def should_recognize_classes_defined_in_module(self):
+        module = sys.modules[__name__]
+        assert du.is_member_class(DummyDataset, module)
+        assert not du.is_member_class(dummy_function, module)
+        assert not du.is_member_class(ds.AbstractDataset, module)
+
+
+class TestDescribeCatalog:
+    def should_describe_classes(self):
+        module = sys.modules[__name__]
+        descriptions = du.describe_catalog(module)
+        print(descriptions)
+        assert DummyDataset.catalog_path() in descriptions
+        assert (
+            descriptions[DummyDataset.catalog_path()]
+            == DummyDataset.description()
+        )
