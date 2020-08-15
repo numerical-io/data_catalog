@@ -52,9 +52,11 @@ class LocalFileSystem(AbstractFileSystem):
 
     def last_update_time(self, path):
         if self.exists(path):
-            return (self.root/path).stat().st_mtime
+            return datetime.fromtimestamp(
+                (self.root/path).stat().st_mtime
+            ).astimezone()
         else:
-            return 0
+            return datetime.fromtimestamp(0).astimezone()
 
     def full_path(self, path):
         return self.root/path
@@ -90,7 +92,7 @@ class S3FileSystem(AbstractFileSystem):
         if self.exists(path):
             return self.file_system.info(self.full_path(path))['LastModified']
         else:
-            return datetime(1, 1, 1, tzinfo=utc)
+            return datetime.fromtimestamp(0, tz=utc)
 
     def full_path(self, path):
         return (self.root/path).as_posix()

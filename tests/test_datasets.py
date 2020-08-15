@@ -1,4 +1,5 @@
 from pathlib import Path, PurePath
+from datetime import datetime
 
 import pytest
 import pandas as pd
@@ -165,13 +166,16 @@ class TestFileDataset:
 
         a = MyDataset(context)
         last_update_time = a.last_update_time()
-        assert (last_update_time != 0) and isinstance(last_update_time, float)
+
+        assert (
+            last_update_time > datetime.fromtimestamp(0).astimezone()
+        ) and isinstance(last_update_time, datetime)
 
         class MyOtherDataset(dd.FileDataset):
             relative_path = "non_existant_dataset.dat"
 
         a = MyOtherDataset(context)
-        assert a.last_update_time() == 0
+        assert a.last_update_time() == datetime.fromtimestamp(0).astimezone()
 
     def should_tell_if_exists(self):
         datasets_path = Path(__file__).parent / "examples" / "datasets"

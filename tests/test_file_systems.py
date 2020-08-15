@@ -1,4 +1,5 @@
 from pathlib import Path, PurePosixPath
+from datetime import datetime
 
 import pytest
 
@@ -29,7 +30,7 @@ class TestLocalFileSystem:
 
     def should_get_file_update_time(self, local_file_system):
         last_update_time = local_file_system.last_update_time("raw_dataset.csv")
-        assert isinstance(last_update_time, float)
+        assert isinstance(last_update_time, datetime)
 
     def should_open_files(self, local_file_system):
         with local_file_system.open("raw_dataset.csv") as file:
