@@ -1,210 +1,289 @@
-from pathlib import Path
+from pathlib import Path, PurePath
+from datetime import datetime
 
 import pytest
 import pandas as pd
 
-import data_catalog.core.datasets as ds
-from data_catalog.core.datasets import AbstractDataset
-from data_catalog import FileDataset, CsvDataset, LocalFileSystem
-
-
-class TestFindMandatoryArguments:
-
-    def should_detect_only_mandatory_arguments(self):
-        def my_func(a, b, c=3):
-            pass
-        arguments = ds._find_mandatory_arguments(my_func)
-        assert arguments == ['a', 'b']
-
-    def should_include_mandatory_kwargs(self):
-        def my_func(a, b, *, c, d=7):
-            pass
-        arguments = ds._find_mandatory_arguments(my_func)
-        assert arguments == ['a', 'b', 'c']
-
-
-class TestValidateCategory:
-
-    def should_return_full_category_name(self):
-        assert ds._validate_category('bse') == 'base'
-        assert ds._validate_category('models') == 'models'
-
-    def should_fail_when_invalid_category(self):
-        with pytest.raises(ValueError):
-            ds._validate_category('invalid_category')
-
-    def should_fail_when_none_category(self):
-        with pytest.raises(ValueError):
-            ds._validate_category(None)
-
-
-class TestRetrieveCategory:
-
-    def should_return_full_category_from_name(self):
-        assert ds._retrieve_category('ftr_misc_dataset') == 'features'
-        assert ds._retrieve_category('raw_other_dataset') == 'raw'
-
-    def should_fail_when_invalid_name(self):
-        with pytest.raises(ValueError):
-            ds._retrieve_category('invalid_dataset')
+import data_catalog.datasets as dd
 
 
 class TestAbstractDataset:
-
-    def should_register_all_subclasses(self):
-        a = AbstractDataset('raw_name1')
-        b = FileDataset('cln_name2', relpath='misc/path/dataset.csv')
-        assert a in AbstractDataset.registry
-        assert b in AbstractDataset.registry
-
-    def should_enforce_valid_names(self):
-        a = AbstractDataset('cln_name', 'some description')
-        with pytest.raises(ValueError):
-            b = AbstractDataset('misc_name', 'some description')
-
-    def should_infer_category_from_name(self):
-        a = AbstractDataset('cln_name', 'some description')
-        assert a.category == 'clean'
-
-    def should_not_register_classes_with_invalid_name(self):
-        invalid_name = 'this_invalid_name_should_prevent_registering'
-        try:
-            a = AbstractDataset(invalid_name)
-        except:
+    def should_infer_its_name(self):
+        class MyDataset(dd.AbstractDataset):
             pass
-        registry = AbstractDataset.registry
-        dataset_names = [dataset.name for dataset in registry]
-        assert invalid_name not in dataset_names
+
+        assert MyDataset.name() == "MyDataset"
+
+    def should_infer_its_path_in_catalog(self):
+        class MyDataset(dd.AbstractDataset):
+            pass
+
+        assert MyDataset.catalog_path() == "test_datasets.MyDataset"
+
+    def should_infer_description_from_docstring(self):
+        class MyDataset(dd.AbstractDataset):
+            """This is a docstring."""
+
+            pass
+
+        assert MyDataset.description() == "This is a docstring."
+
+    def should_check_parents_are_datasets(self):
+        with pytest.raises(ValueError):
+
+            class ChildDataset(dd.AbstractDataset):
+                parents = ["not_a_dataset"]
+
+                def create(self, a):
+                    pass
+
+    def should_have_create_matching_parents(self):
+        class ParentDataset(dd.AbstractDataset):
+            pass
+
+        # Case: create has too few arguments
+        with pytest.raises(ValueError):
+
+            class ChildDataset(dd.AbstractDataset):
+                parents = [ParentDataset]
+
+                def create(self):
+                    pass
+
+        # Case: create has too many arguments
+        with pytest.raises(ValueError):
+
+            class ChildDataset(dd.AbstractDataset):
+                parents = [ParentDataset]
+
+                def create(self, a, b):
+                    pass
+
+        # Case: create should have no arguments
+        with pytest.raises(ValueError):
+
+            class ChildDataset(dd.AbstractDataset):
+                parents = []
+
+                def create(self, a):
+                    pass
+
+        # Case: create should have no arguments, because parents is absent
+        with pytest.raises(ValueError):
+
+            class ChildDataset(dd.AbstractDataset):
+                def create(self, a):
+                    pass
+
+        # Case: create should exist, because dataset has parents
+        with pytest.raises(ValueError):
+
+            class ChildDataset(dd.AbstractDataset):
+                parents = [ParentDataset]
+
+        # All these should not raise exceptions
+        class ChildDataset(dd.AbstractDataset):
+            parents = []
+
+        class ChildDataset(dd.AbstractDataset):
+            def create(self):
+                pass
+
+        class ChildDataset(dd.AbstractDataset):
+            parents = [ParentDataset]
+
+            def create(self, df):
+                pass
+
+    def should_allow_no_parents(self):
+        # When no parents are given, the parents are set to an empty list
+        class ParentDataset(dd.AbstractDataset):
+            pass
+
+        assert isinstance(ParentDataset.parents, list)
+        assert len(ParentDataset.parents) == 0
+
+    def should_have_same_class_and_object_hash(self):
+        class MyDataset(dd.AbstractDataset):
+            pass
+
+        assert hash(MyDataset) == hash("test_datasets.MyDataset")
+        assert hash(MyDataset({})) == hash("test_datasets.MyDataset")
+
+    def should_be_singleton_class(self):
+        class MyDataset(dd.AbstractDataset):
+            pass
+
+        class MyOtherDataset(dd.AbstractDataset):
+            pass
+
+        # All instances are identical
+        assert MyDataset({}) == MyDataset({})
+
+        # Instance and class are identical (!)
+        assert MyDataset({}) == MyDataset
+
+        # Different classes / instance are not equal
+        assert MyDataset != MyOtherDataset
+        assert MyDataset != MyOtherDataset({})
+
+    def should_save_context(self):
+        context = {"a": 1, "b": 2}
+        a = dd.AbstractDataset(context)
+        assert a.context == context
 
 
 class TestFileDataset:
+    def should_infer_missing_relative_path(self, tmpdir):
+        class MyDataset(dd.FileDataset):
+            def create(self):
+                pass
 
-    def should_fail_to_write(self):
-        a = FileDataset('raw_dataset', relpath='raw/dataset.csv')
-        df = pd.DataFrame({'a': [1, 2]})
+        relative_path = MyDataset.relative_path.as_posix()
+        assert relative_path == "MyDataset.dat"
+
+    def should_ensure_relative_path_is_path_object(self):
+        class MyDataset(dd.FileDataset):
+            relative_path = "test_datasets/MyDataset.dat"
+
+        assert isinstance(MyDataset.relative_path, PurePath)
+
+    def should_tell_full_path(self, tmpdir):
+        class MyDataset(dd.FileDataset):
+            def create(self):
+                pass
+
+        context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
+        expected_path = Path(tmpdir) / "MyDataset.dat"
+        assert MyDataset(context).path() == expected_path
+
+    def should_tell_last_update_time(self):
+        datasets_path = Path(__file__).parent / "examples" / "datasets"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        class MyDataset(dd.FileDataset):
+            relative_path = "raw_dataset.csv"
+
+        a = MyDataset(context)
+        last_update_time = a.last_update_time()
+
+        assert (
+            last_update_time > datetime.fromtimestamp(0).astimezone()
+        ) and isinstance(last_update_time, datetime)
+
+        class MyOtherDataset(dd.FileDataset):
+            relative_path = "non_existant_dataset.dat"
+
+        a = MyOtherDataset(context)
+        assert a.last_update_time() == datetime.fromtimestamp(0).astimezone()
+
+    def should_tell_if_exists(self):
+        datasets_path = Path(__file__).parent / "examples" / "datasets"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        class MyDataset(dd.FileDataset):
+            relative_path = "raw_dataset.csv"
+
+        a = MyDataset(context)
+        assert a.exists()
+
+        class MyOtherDataset(dd.FileDataset):
+            relative_path = "non_existant_dataset.dat"
+
+        a = MyOtherDataset(context)
+        assert not a.exists()
+
+    def should_let_override_file_extension(self, tmpdir):
+        class MyDataset(dd.FileDataset):
+            file_extension = "data"
+
+            def create(self):
+                pass
+
+        relative_path = MyDataset.relative_path.as_posix()
+        assert relative_path == "MyDataset.data"
+
+    def should_fail_to_write(self, tmpdir):
+        class MyDataset(dd.FileDataset):
+            def create(self):
+                pass
+
+        context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
+        a = MyDataset(context)
+        df = pd.DataFrame({"a": [1, 2]})
         with pytest.raises(NotImplementedError):
             a.write(df)
 
-    def should_fail_to_read(self):
-        a = FileDataset('cln_dataset', relpath='cln/dataset.csv')
+    def should_fail_to_read(self, tmpdir):
+        datasets_path = Path(__file__).parent / "examples" / "datasets"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        class MyDataset(dd.FileDataset):
+            relative_path = "raw_dataset.csv"
+
+        a = MyDataset(context)
         with pytest.raises(NotImplementedError):
             df = a.read()
 
-    def should_fail_to_tell_full_path(self):
-        a = FileDataset('ftr_dataset', create=lambda x: x)
-        with pytest.raises(NotImplementedError):
-            a.path
-
-    def should_fail_to_tell_last_update_time(self):
-        a = FileDataset('ftr_dataset', create=lambda x: x)
-        with pytest.raises(NotImplementedError):
-            a.last_update_time()
-
-    def should_fail_to_tell_if_exists(self):
-        a = FileDataset('ftr_dataset', create=lambda x: x)
-        with pytest.raises(NotImplementedError):
-            a.exists()
-
-    def should_infer_missing_relpath_from_name(self):
-        a = FileDataset('ftr_dataset', create=lambda x: x)
-        a._relpath.as_posix() == 'features/ftr_dataset.dat'
-
-    def should_require_relpath_or_create(self):
-        with pytest.raises(ValueError):
-            a = FileDataset('mdl_dataset')
-
-    def should_infer_parents_from_create(self):
-        def create(a, b):
-            return a
-        a = FileDataset('ftr_dataset', create=create)
-        assert a.parents == ['a', 'b']
-
-    def should_let_override_parents(self):
-        a = FileDataset(
-            'ftr_dataset', create=lambda x, y: x, parents=['a', 'b'])
-        assert a.parents == ['a', 'b']
-
-    def should_have_no_parents_if_no_create(self):
-        a = FileDataset('ftr_dataset', relpath='features/dataset.csv')
-        assert a.parents is None
-
-    def should_fail_if_create_incompatible_with_parents(self):
-        with pytest.raises(ValueError):
-            a = FileDataset(
-                'ftr_dataset', create=lambda x, y: x, parents=['a'])
-
-    def should_be_instanciable_with_decorator(self):
-
-        @FileDataset.from_parents(description='mydesc')
-        def cln_dataset_from_decorator(raw_dataset_a, raw_dataset_b):
-            return raw_dataset_a
-
-        # Find the dataset created in the registry
-        registry = AbstractDataset.registry
-        print(registry[-1], dir(registry[-1]))
-        dataset_names = [dataset.name for dataset in registry]
-        assert 'cln_dataset_from_decorator' in dataset_names
+    def should_save_context(self, tmpdir):
+        context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
+        a = dd.FileDataset(context)
+        assert a.context == context
 
 
 class TestCsvDataset:
-
     def should_write(self, tmpdir):
-        FileDataset.file_system = LocalFileSystem(tmpdir)
-        a = CsvDataset('raw_dataset', relpath='raw/dataset.csv')
-        df = pd.DataFrame({'a': [1, 2]})
+        class RawDataset(dd.CsvDataset):
+            relative_path = "raw/dataset.csv"
+
+        context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
+        a = RawDataset(context)
+        print(a.write_mode())
+        df = pd.DataFrame({"a": [1, 2]})
         a.write(df)
+
         # Check what has been written
-        imported_df = pd.read_csv(a.path, index_col=0)
+        imported_df = pd.read_csv(a.path(), index_col=0)
         assert df.equals(imported_df)
 
     def should_write_with_kwargs(self, tmpdir):
-        FileDataset.file_system = LocalFileSystem(tmpdir)
-        a = CsvDataset(
-            'raw_dataset', relpath='raw/dataset.csv',
-            write_kwargs={'index': False})
-        df = pd.DataFrame({'a': [1, 2]})
+        class RawDataset(dd.CsvDataset):
+            relative_path = "raw/dataset.csv"
+            write_kwargs = {"index": False}
+
+        context = {"catalog_uri": Path(tmpdir).absolute().as_uri()}
+        a = RawDataset(context)
+        print(a.write_mode())
+        df = pd.DataFrame({"a": [1, 2]})
         a.write(df)
+
         # Check what has been written
-        imported_df = pd.read_csv(a.path)
+        imported_df = pd.read_csv(a.path())
         assert df.equals(imported_df)
 
     def should_read(self):
-        fs_root = Path(__file__).parent/'examples/datasets'
-        FileDataset.file_system = LocalFileSystem(fs_root)
-        a = CsvDataset('raw_dataset', relpath='raw_dataset.csv')
+        datasets_path = Path(__file__).parent / "examples" / "datasets"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        class RawDataset(dd.CsvDataset):
+            relative_path = "raw_dataset.csv"
+
+        a = RawDataset(context)
         df = a.read()
-        assert 'a' in df.columns
+        assert "a" in df.columns
         assert df.shape == (2, 3)
 
     def should_read_with_kwargs(self):
-        fs_root = Path(__file__).parent/'examples/datasets'
-        FileDataset.file_system = LocalFileSystem(fs_root)
-        a = CsvDataset(
-            'raw_dataset', relpath='raw_dataset.csv',
-            read_kwargs={'index_col': 'a'})
+        datasets_path = Path(__file__).parent / "examples" / "datasets"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        class RawDataset(dd.CsvDataset):
+            relative_path = "raw_dataset.csv"
+            read_kwargs = {"index_col": "a"}
+
+        a = RawDataset(context)
         df = a.read()
-        assert 'a' not in df.columns
-        assert df.index.name == 'a'
+
+        assert "a" not in df.columns
+        assert df.index.name == "a"
         assert df.shape == (2, 2)
-
-    def should_tell_full_path(self, tmpdir):
-        FileDataset.file_system = LocalFileSystem(tmpdir)
-        a = CsvDataset('ftr_dataset', create=lambda x: x)
-        assert a.path == (Path(tmpdir)/'features'/'ftr_dataset.csv')
-
-    def should_tell_last_update_time(self, tmpdir):
-        FileDataset.file_system = LocalFileSystem(tmpdir)
-        a = CsvDataset('ftr_dataset', create=lambda x: x)
-        assert a.last_update_time() == 0
-        df = pd.DataFrame({'a': [1, 2]})
-        a.write(df)
-        last_update_time = a.last_update_time()
-        assert (last_update_time != 0) and isinstance(last_update_time, float)
-
-    def should_tell_if_exists(self):
-        fs_root = Path(__file__).parent/'examples/datasets'
-        FileDataset.file_system = LocalFileSystem(fs_root)
-        a = CsvDataset('raw_dataset', relpath='raw_dataset.csv')
-        assert a.exists()
-        a = CsvDataset('raw_dataset', relpath='non_existant_dataset.csv')
-        assert not a.exists()
