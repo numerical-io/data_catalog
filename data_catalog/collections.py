@@ -39,7 +39,6 @@ class MetaCollection(ABCMetaCollection):
 
     def __eq__(self, other):
         if is_dataset(other) or is_collection(other):
-            print(type(self), type(other))
             return self.catalog_path() == other.catalog_path()
 
         else:
@@ -115,7 +114,6 @@ class AbstractCollection(metaclass=MetaCollection):
 
     def __eq__(self, other):
         if is_dataset(other) or is_collection(other):
-            print(type(self), type(other))
             return self.catalog_path() == other.catalog_path()
 
         else:

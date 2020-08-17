@@ -72,7 +72,6 @@ class MetaDataset(ABCMetaDataset):
 
     def __eq__(self, other):
         if is_dataset(other) or is_collection(other):
-            print(type(self), type(other))
             return self.catalog_path() == other.catalog_path()
 
         else:
@@ -106,7 +105,6 @@ class AbstractDataset(metaclass=MetaDataset):
 
     def __eq__(self, other):
         if is_dataset(other) or is_collection(other):
-            print(type(self), type(other))
             return self.catalog_path() == other.catalog_path()
 
         else:
