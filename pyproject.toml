@@ -1,2 +1,28 @@
 [tool.black]
 line-length = 80
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+python_functions = "test_* should_*"
+
+[tool.pylint.basic]
+
+# Regular expression matching correct argument names
+argument-rgx = "[a-z_][a-z0-9_]{0,30}$"
+
+# Naming hint for argument names
+argument-name-hint = "[a-z_][a-z0-9_]{0,30}$"
+
+# Regular expression matching correct variable names
+variable-rgx = "[a-z_][a-z0-9_]{0,30}$"
+
+# Naming hint for variable names
+variable-name-hint = "[a-z_][a-z0-9_]{0,30}$"
+
+[tool.pylint.format]
+
+# Maximum number of characters on a single line.
+max-line-length = 80
+
+[tool.pylint.reports]
+output-format="colorized"
