@@ -241,10 +241,10 @@ def collection_to_filter():
 
 @pytest.fixture
 def filtered_collection(collection_to_filter):
-    def filter_func(child_key, parent_key):
+    def predicate(parent_key, child_key):
         return parent_key[0] == child_key
 
-    my_filter = dc.CollectionFilter(collection_to_filter, filter_func)
+    my_filter = dc.CollectionFilter(collection_to_filter, predicate)
     filtered_collection = my_filter.filter_by("a")
     return filtered_collection
 

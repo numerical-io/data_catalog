@@ -49,7 +49,7 @@ def sample_data_classes():
         class Item(dd.ParquetDataset):
             parents = [
                 dc.CollectionFilter(
-                    Collection1, lambda child, parent: parent[0] == child,
+                    Collection1, lambda parent, child: parent[0] == child,
                 )
             ]
 

@@ -174,14 +174,14 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
 
 class CollectionFilter(ABCCollectionFilter):
-    def __init__(self, collection, func):
+    def __init__(self, collection, predicate):
         self.collection = collection
-        self.func = func
+        self.predicate = predicate
 
     def filter_by(self, child_key):
         # Define function to filter keys of parent, parametrized by child key
-        def filter_func(parent_key):
-            return self.func(child_key, parent_key)
+        def filter_predicate(parent_key):
+            return self.predicate(parent_key, child_key)
 
         # Define the .keys() method for the filtered collection
         def keys(collection_self):
@@ -189,7 +189,7 @@ class CollectionFilter(ABCCollectionFilter):
                 collection_self.__class__, collection_self
             ).keys()
 
-            return [key for key in original_keys if filter_func(key)]
+            return [key for key in original_keys if filter_predicate(key)]
 
         # Create the class for the filtered collection
         # The filtered collection inherits the original collection. Some
