@@ -233,6 +233,7 @@ def create_task_graph(
             expense of more storage accesses.
     """
     # Create dataset instances from dataset/collection classes in inputs
+    logger.info("Create task graph")
     all_datasets = _get_dataset_instances(data_classes, context)
     if targets:
         target_datasets = list(_get_dataset_instances(targets, context))
@@ -247,6 +248,7 @@ def create_task_graph(
     # Optimize the task graph, first by restricting to the subgraph useful to
     # compute targets, then by removing datasets that will not change. The first
     # pruning reduces storage access when detecting unchanging datasets.
+    logger.info("Optimize task graph")
     task_graph = _prune_task_graph(task_graph, target_datasets)
     task_graph = _prevent_update_of_unchanging_datasets(
         task_graph, in_memory_data_transfer=in_memory_data_transfer

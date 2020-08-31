@@ -57,7 +57,6 @@ def _validate_keys_method(keys):
 
 
 class AbstractCollection(metaclass=MetaCollection):
-
     def keys(self):
         pass
 
@@ -143,7 +142,6 @@ class MetaFileCollection(MetaCollection):
 
 
 class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
-
     def keys(self):
         pass
 
@@ -174,22 +172,15 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
 
 class CollectionFilter(ABCCollectionFilter):
-    def __init__(self, collection, predicate):
+    def __init__(self, collection, key_filter):
         self.collection = collection
-        self.predicate = predicate
+        self.key_filter = key_filter
 
     def filter_by(self, child_key):
-        # Define function to filter keys of parent, parametrized by child key
-        def filter_predicate(parent_key):
-            return self.predicate(parent_key, child_key)
 
         # Define the .keys() method for the filtered collection
         def keys(collection_self):
-            original_keys = super(
-                collection_self.__class__, collection_self
-            ).keys()
-
-            return [key for key in original_keys if filter_predicate(key)]
+            return self.key_filter(collection_self, child_key)
 
         # Create the class for the filtered collection
         # The filtered collection inherits the original collection. Some

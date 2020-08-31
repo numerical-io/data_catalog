@@ -138,8 +138,10 @@ class TestAbstractCollection:
 
     def should_validate_keys_method(self):
         with pytest.raises(Exception):
+
             class SomeCollection(dc.AbstractCollection):
-                keys = lambda : ["a", "b"]
+                keys = lambda: ["a", "b"]
+
                 class Item(dd.AbstractDataset):
                     pass
 
@@ -241,10 +243,13 @@ def collection_to_filter():
 
 @pytest.fixture
 def filtered_collection(collection_to_filter):
-    def predicate(parent_key, child_key):
-        return parent_key[0] == child_key
+    def key_filter(self, child_key):
+        if child_key == "a":
+            return ["a1", "a2"]
+        else:
+            return ["b1"]
 
-    my_filter = dc.CollectionFilter(collection_to_filter, predicate)
+    my_filter = dc.CollectionFilter(collection_to_filter, key_filter)
     filtered_collection = my_filter.filter_by("a")
     return filtered_collection
 
@@ -298,6 +303,26 @@ class TestCollectionFilter:
             ds_from_filtered.catalog_path() == ds_from_original.catalog_path()
         )
         assert ds_from_filtered.relative_path == ds_from_original.relative_path
+
+    def should_let_filter_access_the_original_collection(
+        self, collection_to_filter
+    ):
+        # Build a context, with catalog URI pointing to any folder (not used)
+        datasets_path = Path(__file__).parent / "examples"
+        context = {"catalog_uri": datasets_path.absolute().as_uri()}
+
+        # Check that we can access e.g. the keys of the original collection
+        def key_filter(self, child_key):
+            original_keys = super(self.__class__, self).keys()
+            return original_keys
+
+        my_filter = dc.CollectionFilter(collection_to_filter, key_filter)
+        filtered_collection = my_filter.filter_by("a")
+        assert (
+            filtered_collection(context).keys()
+            == collection_to_filter(context).keys()
+        )
+        filtered_collection(context).keys()
 
 
 class TestSingleDatasetFilter:
