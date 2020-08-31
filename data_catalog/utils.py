@@ -4,6 +4,7 @@
 from pathlib import PurePath
 import inspect
 from functools import partial
+import re
 
 from .abc import is_dataset, is_collection
 
@@ -100,3 +101,8 @@ def list_catalog(module):
 def describe_catalog(module):
     data_classes = list_catalog(module)
     return {ds.catalog_path(): ds.description() for ds in data_classes}
+
+
+def camel2snake(name):
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()

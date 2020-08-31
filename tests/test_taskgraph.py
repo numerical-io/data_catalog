@@ -49,7 +49,11 @@ def sample_data_classes():
         class Item(dd.ParquetDataset):
             parents = [
                 dc.CollectionFilter(
-                    Collection1, lambda child, parent: parent[0] == child,
+                    Collection1,
+                    lambda self, child: {
+                        "a": ["a1", "a2"],
+                        "b": ["b1", "b2"],
+                    }.get(child, []),
                 )
             ]
 
@@ -126,11 +130,13 @@ class TestCreateDatasets:
     ):
         # Create all datasets
         context = {"catalog_uri": tmp_path.absolute().as_uri()}
-        dask.get(*dt.create_task_graph(
-            sample_data_classes.values(),
-            context,
-            targets=[sample_data_classes["Dataset1"]],
-        ))
+        dask.get(
+            *dt.create_task_graph(
+                sample_data_classes.values(),
+                context,
+                targets=[sample_data_classes["Dataset1"]],
+            )
+        )
 
         assert sample_data_classes["Dataset1"](context).exists()
         assert not sample_data_classes["Dataset2"](context).exists()
@@ -173,21 +179,25 @@ class TestCreateDatasets:
     def should_handle_empty_collections(self, sample_data_classes, tmp_path):
         # Create all datasets
         context = {"catalog_uri": tmp_path.absolute().as_uri()}
-        dask.get(*dt.create_task_graph(
-            sample_data_classes.values(),
-            context,
-            targets=[sample_data_classes["Dataset2"]],
-        ))
+        dask.get(
+            *dt.create_task_graph(
+                sample_data_classes.values(),
+                context,
+                targets=[sample_data_classes["Dataset2"]],
+            )
+        )
 
         assert sample_data_classes["Dataset2"](context).read().empty
 
     def should_allow_in_memory_transfer(self, sample_data_classes, tmp_path):
         context = {"catalog_uri": tmp_path.absolute().as_uri()}
-        results = dask.get(*dt.create_task_graph(
-            sample_data_classes.values(),
-            context,
-            targets=[sample_data_classes["Collection1"].get("a1")],
-            in_memory_data_transfer=True,
-        ))
+        results = dask.get(
+            *dt.create_task_graph(
+                sample_data_classes.values(),
+                context,
+                targets=[sample_data_classes["Collection1"].get("a1")],
+                in_memory_data_transfer=True,
+            )
+        )
         assert len(results) == 1
         assert set(results[0].columns) == {"a1"}
