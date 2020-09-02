@@ -265,3 +265,23 @@ class ExcelDataset(FileDataset):
 
     def _write(self, df, file, **kwargs):
         df.to_excel(file, **kwargs)
+
+
+class YamlDataset(FileDataset):
+    """A Yaml dataset saved as a file on a disk.
+    """
+
+    file_extension = "yml"
+    is_binary_file = False
+
+    def _read(self, file, **kwargs):
+        # The yaml import is done here, to make the dependency optional.
+        # Yaml is needed only when this object is used.
+        import yaml
+
+        return yaml.safe_load(file, **kwargs)
+
+    def _write(self, df, file, **kwargs):
+        import yaml
+
+        yaml.safe_dump(df, file, **kwargs)
