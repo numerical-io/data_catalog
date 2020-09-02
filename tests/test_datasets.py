@@ -287,3 +287,21 @@ class TestCsvDataset:
         assert "a" not in df.columns
         assert df.index.name == "a"
         assert df.shape == (2, 2)
+
+
+class TestYamlDataset:
+    def should_read_and_write(self, tmp_path):
+        context = {"catalog_uri": tmp_path.absolute().as_uri()}
+
+        class SomeDataset(dd.YamlDataset):
+            pass
+
+        a = SomeDataset(context)
+        assert not a.exists()
+
+        some_data = {"a": [1, 2, 3]}
+        a.write(some_data)
+        assert a.exists()
+
+        data_read = a.read()
+        assert data_read == some_data
