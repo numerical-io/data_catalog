@@ -23,6 +23,11 @@ from .utils import _find_mandatory_arguments
 
 
 class MetaDataset(ABCMetaDataset):
+    """Metaclass for dataset classes.
+
+    This metaclass ensures the class is properly defined, with valid attributes.
+    """
+
     def __new__(mcs, name, bases, attrs, **kwargs):
 
         # Set default values for class attributes
@@ -71,22 +76,44 @@ class MetaDataset(ABCMetaDataset):
         return hash(self.catalog_path())
 
     def __eq__(self, other):
+        """Equality operator for datasets.
+
+        Note that an object and its class are considered equal.
+        """
         if is_dataset(other) or is_collection(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
 
 
 class AbstractDataset(metaclass=MetaDataset):
-    """Doc AbstractDataset
+    """Abstract class for datasets.
+
+    Inheriting classes can have the following attributes:
+    - `parents`: A list of dataset/collection classes from which the dataset is
+      defined.
+    - `create`: A method to create the dataset. It takes as inputs, aside from
+      `self`, the data loaded from all classes in `parents`. The number of input
+      arguments (not counting `self`) must therefore be equal to the length of
+      `parents`. The method must return the created data.
     """
 
     def __init__(self, context):
+        """Sets the dataset context.
+
+        Args:
+            context (dict): key-value parameters defining the execution context.
+        """
         self.context = context
 
     @classmethod
     def description(cls):
+        """Return the description of the dataset.
+
+        Returns:
+            str: Description of the dataset, None if unavailable.
+        """
         if cls.__doc__:
             return cls.__doc__.strip()
         else:
@@ -94,24 +121,45 @@ class AbstractDataset(metaclass=MetaDataset):
 
     @classmethod
     def name(cls):
+        """Return the name of the dataset.
+
+        Returns:
+            str: Name of the dataset (class name).
+        """
         return cls.__name__
 
     @classmethod
     def catalog_path(cls):
+        """Return the catalog path of the dataset.
+
+        Returns:
+            str: The catalog path. It is made of the path in the module/package,
+              and of the class name, separated by periods. It is a unique
+              identifier of the class.
+        """
         return f"{cls._catalog_module}.{cls.__name__}"
 
     def __hash__(self):
         return hash(self.catalog_path())
 
     def __eq__(self, other):
+        """Equality operator for datasets.
+
+        Note that an object and its class are considered equal.
+        """
         if is_dataset(other) or is_collection(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
 
 
 class MetaFileDataset(MetaDataset):
+    """Metaclass for file dataset classes.
+
+    This metaclass ensures the class is properly defined, with valid attributes.
+    """
+
     def __new__(mcs, name, bases, attrs, **kwargs):
 
         # Ensure relative path is PurePath object
@@ -132,6 +180,19 @@ class MetaFileDataset(MetaDataset):
 
 
 class FileDataset(AbstractDataset, metaclass=MetaFileDataset):
+    """Base class for file datasets.
+
+    Inheriting classes can have the same attributes `parents` and `create` as
+    AbstractDataset, as well as the following attributes:
+
+    - `relative_path`: The file path, relative to the catalog URI defined in the
+      context.
+    - `file_extension`: The file extension.
+    - `is_binary_file`: A boolean indicating whether the file is a text or
+      binary file.
+    - `read_kwargs`: A dict of keyword arguments for reading the dataset.
+    - `write_kwargs`: A dict of keyword arguments for writing the dataset.
+    """
 
     file_extension = "dat"
     is_binary_file = True
@@ -139,6 +200,16 @@ class FileDataset(AbstractDataset, metaclass=MetaFileDataset):
     write_kwargs = {}
 
     def __init__(self, context):
+        """Sets the dataset context.
+
+        Args:
+            context (dict): key-value parameters defining the execution context.
+              The context must contain a key `catalog_uri` defining the
+              location of catalog data files on disk (str starting with
+              `file://`` or `s3://`). It may also contain a key `fs_kwargs`
+              with keyword arguments passed on to the filesystem object (e.g.
+              additional arguments for authentication or configuration).
+        """
         uri = context["catalog_uri"]
         kwargs = context.get("fs_kwargs", {})
         self.file_system = create_filesystem_from_uri(uri, **kwargs)

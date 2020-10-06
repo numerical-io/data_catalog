@@ -1,4 +1,4 @@
-"""Virtual file systems.
+"""Classes representing file systems.
 """
 from pathlib import Path, PurePosixPath
 from datetime import datetime

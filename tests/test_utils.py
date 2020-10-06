@@ -24,15 +24,6 @@ class TestFindMandatoryArguments:
         assert arguments == ["a", "b", "c"]
 
 
-# class TestFolderIterator:
-#     def should_list_filenames_without_extension(self):
-#         file_system = df.LocalFileSystem(
-#             Path(__file__).parent / "examples" / "datasets"
-#         )
-#         iterator = du.FolderIterator("dir_to_list")
-#         assert iterator(file_system) == {"file_a", "file_b"}
-
-
 class TestKeysFromFolder:
     def should_list_filenames_without_extension(self):
         class ClassWithFileSystem:

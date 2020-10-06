@@ -23,17 +23,14 @@ def _find_mandatory_arguments(func):
 
 def keys_from_folder(relative_folder_path):
     """
+    TBD
 
     The returned closure will be bound, so must have first argument `self`.
-    self must have a file_system.
-    Returns a SET of names.
-    Shoud return a closure, that given a file_system, returns a SET of names.
-    NB:
-    returns file names without extension
+    self must have a file_system attribute.
+    Returns a set of file names without extension
     - hidden files are excluded
     - files with same name but different extension appear only once in the list
     - directories are included (should be avoided ?)
-    NB: if several files in the folder have the same name, but a different
     """
 
     def list_keys(self):
@@ -42,25 +39,6 @@ def keys_from_folder(relative_folder_path):
         return stems
 
     return list_keys
-
-
-# class FolderIterator:
-#     """
-#     NB:
-#     returns file names without extension
-#     - hidden files are excluded
-#     - files with same name but different extension appear only once in the list
-#     - directories are included (should be avoided ?)
-#     NB: if several files in the folder have the same name, but a different
-#     """
-#
-#     def __init__(self, relative_folder_path):
-#         self.relative_folder_path = relative_folder_path
-#
-#     def __call__(self, file_system):
-#         filenames = file_system.listdir(self.relative_folder_path)
-#         stems = {PurePath(name).stem for name in filenames}
-#         return stems
 
 
 def is_sub_module(x, module):
@@ -79,6 +57,8 @@ def is_member_class(x, module):
 
 def list_catalog(module):
     """Finds all imported datasets and collections from a module and submodules.
+
+    Only classes of imported modules/submodules are found.
     """
     # Collect data classes in current module (datasets and collections)
     all_classes = set(
@@ -99,6 +79,10 @@ def list_catalog(module):
 
 
 def describe_catalog(module):
+    """Describe all datasets and collections in a module and submodules.
+
+    Only classes of imported modules/submodules are found.
+    """
     data_classes = list_catalog(module)
     return {ds.catalog_path(): ds.description() for ds in data_classes}
 
