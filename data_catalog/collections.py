@@ -16,6 +16,11 @@ from .file_systems import create_filesystem_from_uri
 
 
 class MetaCollection(ABCMetaCollection):
+    """Metaclass for collection classes.
+
+    This metaclass ensures the class is properly defined, with valid attributes.
+    """
+
     def __new__(mcs, name, bases, attrs, **kwargs):
 
         # Check presence of mandatory attributes
@@ -38,14 +43,20 @@ class MetaCollection(ABCMetaCollection):
         return hash(self.catalog_path())
 
     def __eq__(self, other):
+        """Equality operator for collections.
+
+        Note that an object and its class are considered equal.
+        """
         if is_dataset(other) or is_collection(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
 
 
 def _validate_keys_method(keys):
+    """Check that the keys method is valid.
+    """
     if callable(keys):
         num_args = len(inspect.signature(keys).parameters)
         if num_args != 1:
@@ -57,6 +68,14 @@ def _validate_keys_method(keys):
 
 
 class AbstractCollection(metaclass=MetaCollection):
+    """Abstract class for collections.
+
+    Inheriting classes must define the following attributes:
+    - a `keys` method, with a single argument `self`, returning a list of the
+      collection keys.
+    - an `Item` nested class, inheriting from a dataset class.
+    """
+
     def keys(self):
         pass
 
@@ -64,10 +83,20 @@ class AbstractCollection(metaclass=MetaCollection):
         pass
 
     def __init__(self, context):
+        """Set the collection context.
+
+        Args:
+            context (dict): key-value parameters defining the execution context.
+        """
         self.context = context
 
     @classmethod
     def description(cls):
+        """Return the description of the collection.
+
+        Returns:
+            str: Description of the collection, None if unavailable.
+        """
         if cls.__doc__:
             return cls.__doc__.strip()
         else:
@@ -75,14 +104,40 @@ class AbstractCollection(metaclass=MetaCollection):
 
     @classmethod
     def name(cls):
+        """Return the name of the collection.
+
+        Returns:
+            str: Name of the collection (class name).
+        """
         return cls.__name__
 
     @classmethod
     def catalog_path(cls):
+        """Return the catalog path of the collection.
+
+        Returns:
+            str: The catalog path. It is made of the path in the module/package,
+              and of the class name, separated by periods. It is a unique
+              identifier of the class.
+        """
         return f"{cls._catalog_module}.{cls.__name__}"
 
     @classmethod
     def get(cls, key):
+        """Get one or several datasets from the collection.
+
+        Dataset classes created from a collection have their key saved as the
+        `key` attribute.
+
+        Args:
+            key (str or list of str): The key(s) for which the dataset classes
+              must be returned.
+
+        Returns:
+            dataset class, or dict of dataset classes: If a single key is
+              requested, the corresponding dataset class; otherwise a dict
+              indexed by the requested keys, with dataset classes as values.
+        """
         if isinstance(key, list) or isinstance(key, set):
             return {k: cls.get(k) for k in key}
 
@@ -93,8 +148,10 @@ class AbstractCollection(metaclass=MetaCollection):
 
     @staticmethod
     def _set_item_attributes(cls, key):
+        """Set class attributes to create a dataset class from the Item class.
+        """
         parents = [
-            parent.get(key) if is_collection(parent) else parent
+            parent.filter_by(key) if is_collection_filter(parent) else parent
             for parent in cls.Item.parents
         ]
         attributes = {
@@ -112,17 +169,34 @@ class AbstractCollection(metaclass=MetaCollection):
         return hash(self.catalog_path())
 
     def __eq__(self, other):
+        """Equality operator for collections.
+
+        Note that an object and its class are considered equal.
+        """
         if is_dataset(other) or is_collection(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
 
     def read(self, keys=None):
-        raise NotImplemented()
+        """Read a collection or a subset of it.
+
+        Args:
+            keys (list of str): Keys to read. If None, all keys are read.
+
+        Returns:
+            dict: The data from requested collection items, indexed by key.
+        """
+        raise NotImplementedError()
 
 
 class MetaFileCollection(MetaCollection):
+    """Metaclass for collection classes containing file datasets.
+
+    This metaclass ensures the class is properly defined, with valid attributes.
+    """
+
     def __new__(mcs, name, bases, attrs, **kwargs):
         if "relative_path" in attrs:
             # Ensure relative path is PurePath object
@@ -142,6 +216,12 @@ class MetaFileCollection(MetaCollection):
 
 
 class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
+    """Collection of which items are FileDatasets.
+
+    Inheriting classes must have the same attributes `keys` and `Item` as
+    AbstractCollection.
+    """
+
     def keys(self):
         pass
 
@@ -149,6 +229,16 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
         pass
 
     def __init__(self, context):
+        """Sets the collection context and instanciate the file system.
+
+        Args:
+            context (dict): key-value parameters defining the execution context.
+              The context must contain a key `catalog_uri` defining the
+              location of catalog data files on disk (str starting with
+              `file://`` or `s3://`). It may also contain a key `fs_kwargs`
+              with keyword arguments passed on to the filesystem object (e.g.
+              additional arguments for authentication or configuration).
+        """
         uri = context["catalog_uri"]
         kwargs = context.get("fs_kwargs", {})
         self.file_system = create_filesystem_from_uri(uri, **kwargs)
@@ -156,6 +246,11 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
     @staticmethod
     def _set_item_attributes(cls, key):
+        """Set class attributes to create a dataset class from the Item class.
+
+        Among others, define the item `relative_path` attribute from the
+        collection `relative_path`.
+        """
 
         attributes = super()._set_item_attributes(cls, key)
         attributes["relative_path"] = str(
@@ -164,6 +259,14 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
         return attributes
 
     def read(self, keys=None):
+        """Read a collection or a subset of it.
+
+        Args:
+            keys (list of str): Keys to read. If None, all keys are read.
+
+        Returns:
+            dict: The data from requested collection items, indexed by key.
+        """
         if keys is None:
             keys = self.keys()
 
@@ -172,11 +275,32 @@ class FileCollection(AbstractCollection, metaclass=MetaFileCollection):
 
 
 class CollectionFilter(ABCCollectionFilter):
+    """A filter to create a collection as subset from another collection.
+
+    """
+
     def __init__(self, collection, key_filter):
+        """Initialize the collection filter.
+
+        Args:
+            collection (AbstractCollection): The collection to select an item
+              from.
+            key_filter (callable): callable taking as inputs a
+              collection and a child key, and returning a list of keys. The
+              returned keys must be a subset of the keys in collection; this
+              subset changes as a function of child key.
+        """
         self.collection = collection
         self.key_filter = key_filter
 
     def filter_by(self, child_key):
+        """Create a subset of a collection.
+
+        The subset changes as a function of the `child_key` value.
+
+        Args:
+            child_key (str): key used to define the subset.
+        """
 
         # Define the .keys() method for the filtered collection
         def keys(collection_self):
@@ -201,12 +325,37 @@ class CollectionFilter(ABCCollectionFilter):
 
 
 class SingleDatasetFilter(ABCCollectionFilter):
+    """A collection filter that will return a single element.
+
+    """
+
     def __init__(self, collection):
+        """Initialize the collection filter.
+
+        Args:
+            collection (AbstractCollection): The collection to select an item
+              from.
+        """
         self.collection = collection
 
     def filter_by(self, child_key):
+        """Return a single dataset from the collection.
+
+        Args:
+            child_key (str): The key of the requested collection item.
+        """
         return self.collection.get(child_key)
 
 
 def same_key_in(collection):
+    """Creates a collection filter that will return a single element.
+
+    Shortcut to create a SingleDatasetFilter.
+
+    Args:
+        collection (AbstractCollection): The collection to select an item from.
+
+    Returns:
+        SingleDatasetFilter.
+    """
     return SingleDatasetFilter(collection)

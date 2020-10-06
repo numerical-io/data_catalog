@@ -27,9 +27,13 @@ def misc_collection():
         keys = lambda self: ["key_a", "key_b"]
 
         class Item(dd.AbstractDataset):
-            parents = [ParentDataset, ParentCollection]
+            parents = [
+                ParentDataset,
+                ParentCollection,
+                dc.same_key_in(ParentCollection),
+            ]
 
-            def create(self, a, b):
+            def create(self, a, b, c):
                 return a
 
     return MyCollection
@@ -71,12 +75,25 @@ class TestAbstractCollection:
         assert set(several_items.keys()) == {"key_a", "key_b"}
         assert issubclass(several_items["key_a"], misc_collection.Item)
 
-    def should_link_item_to_parent_item(self, misc_collection):
+    # def should_link_item_to_parent_item(self, misc_collection):
+    #     # If the collection has a collection as parent,
+    #     # then an item of the collection must has as parent an item of the
+    #     # parent collection with same key.
+    #     parent_from_parent_collection = misc_collection.get("key_a").parents[1]
+    #     assert parent_from_parent_collection.name() == "ParentCollection:key_a"
+
+    def should_let_item_inherit_from_collection(self, misc_collection):
+        # If the collection has a collection as parent,
+        # each item must inherit from the full collection.
+        parent_from_item = misc_collection.get("key_a").parents[1]
+        assert parent_from_item.name() == "ParentCollection"
+
+    def should_resolve_collection_filters_for_items(self, misc_collection):
         # If the collection has a collection as parent,
         # then an item of the collection must has as parent an item of the
         # parent collection with same key.
-        parent_from_parent_collection = misc_collection.get("key_a").parents[1]
-        assert parent_from_parent_collection.name() == "ParentCollection:key_a"
+        parent_from_item = misc_collection.get("key_a").parents[2]
+        assert parent_from_item.name() == "ParentCollection:key_a"
 
     def should_add_key_attribute_to_item_classes(self, misc_collection):
         assert misc_collection.get("key_a").key == "key_a"

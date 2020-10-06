@@ -23,7 +23,6 @@ def _find_mandatory_arguments(func):
 
 def keys_from_folder(relative_folder_path):
     """
-
     TBD
 
     The returned closure will be bound, so must have first argument `self`.
@@ -58,6 +57,8 @@ def is_member_class(x, module):
 
 def list_catalog(module):
     """Finds all imported datasets and collections from a module and submodules.
+
+    Only classes of imported modules/submodules are found.
     """
     # Collect data classes in current module (datasets and collections)
     all_classes = set(
@@ -78,6 +79,10 @@ def list_catalog(module):
 
 
 def describe_catalog(module):
+    """Describe all datasets and collections in a module and submodules.
+
+    Only classes of imported modules/submodules are found.
+    """
     data_classes = list_catalog(module)
     return {ds.catalog_path(): ds.description() for ds in data_classes}
 

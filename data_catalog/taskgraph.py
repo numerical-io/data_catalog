@@ -5,13 +5,13 @@ import dask
 import dask.optimization
 from dask.core import toposort
 
-from .abc import is_dataset, is_collection, is_collection_filter
+from .abc import is_dataset, is_collection
 
 
 logger = logging.getLogger(__name__)
 
 
-def __create_task(dataset, resolved_parents, in_memory_data_transfer=False):
+def __create_task(dataset, parent_instances, in_memory_data_transfer=False):
     """Create a dataset from its parents, and write it.
     """
 
@@ -24,7 +24,7 @@ def __create_task(dataset, resolved_parents, in_memory_data_transfer=False):
     def from_storage_task(args):
         # Load inputs from storage
         inputs = []
-        for parent in resolved_parents:
+        for parent in parent_instances:
             logger.info(
                 "CREATE {} <- READ {}".format(
                     dataset.catalog_path(), parent.catalog_path()
@@ -37,9 +37,9 @@ def __create_task(dataset, resolved_parents, in_memory_data_transfer=False):
         return None
 
     if in_memory_data_transfer:
-        return (in_memory_task, resolved_parents)
+        return (in_memory_task, parent_instances)
     else:
-        return (from_storage_task, resolved_parents)
+        return (from_storage_task, parent_instances)
 
 
 def __collect_task(collection_instance, in_memory_data_transfer=False):
@@ -98,24 +98,22 @@ def _get_dataset_instances(datasets_and_collections, context):
 def _create_task_graph(datasets, context, in_memory_data_transfer=False):
     """Create the task graph spanning all datasets.
 
-    In the task graph, all datasets are instances (not classes), whether the
+    In the task graph, all datasets are instances (not classes), whether they
     are child or parent.
     """
     task_graph = {}
     for dataset in datasets:
-        # When a parent is a filter, resolve the filter (it resolves into a
-        # dataset or collection)
-        resolved_parents = []
-        for parent in dataset.parents:
-            if is_collection_filter(parent):
-                resolved_parents.append(parent.filter_by(dataset.key)(context))
-            else:
-                resolved_parents.append(parent(context))
+        # The list `datasets` only contains dataset classes (any collection must
+        # have been expanded into datasets at this point). As a consequence,
+        # parents can only by dataset or collection classes (datasets cannot
+        # have collection filters as parents -- only the Item dataset template
+        # of a collection may have collection filters as parents).
+        parent_instances = [parent(context) for parent in dataset.parents]
 
         # Add the dataset creation to the graph
         task_graph[dataset] = __create_task(
             dataset,
-            resolved_parents,
+            parent_instances,
             in_memory_data_transfer=in_memory_data_transfer,
         )
 
@@ -123,7 +121,7 @@ def _create_task_graph(datasets, context, in_memory_data_transfer=False):
         # from its datasets. Do it in this case, because the task graph
         # needs it ; but don't do it for collections that do not need to be
         # collected at once since they may not hold in memory.
-        for parent in resolved_parents:
+        for parent in parent_instances:
             if is_collection(parent):
                 task_graph[parent] = __collect_task(
                     parent, in_memory_data_transfer=in_memory_data_transfer,
