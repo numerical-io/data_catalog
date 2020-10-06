@@ -1,4 +1,4 @@
-"""Collections or datasets.
+"""Collections of datasets.
 
 """
 from pathlib import PurePath
