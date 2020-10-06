@@ -90,7 +90,6 @@ context = {
 }
 
 # Generate a task graph to create datasets, resolving dependencies between them.
-# The task graph is a dict following the usual Dask DAG format.
 datasets = [DatasetA, DatasetB] # leave out DatasetC unless you provide a file dataset_c.csv
 taskgraph, targets = create_task_graph(datasets, context)
 
