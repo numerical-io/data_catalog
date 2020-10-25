@@ -344,13 +344,17 @@ class TestCollectionFilter:
 
 class TestSingleDatasetFilter:
     def should_return_single_dataset(self, collection_to_filter):
-        my_filter = dc.SingleDatasetFilter(collection_to_filter)
+        my_filter = dc.SingleDatasetFilter(
+            collection_to_filter, lambda key: key
+        )
         dataset = my_filter.filter_by("b1")
 
         assert dataset.key == "b1"
 
     def should_be_recognized_as_filter(self, collection_to_filter):
-        my_filter = dc.SingleDatasetFilter(collection_to_filter)
+        my_filter = dc.SingleDatasetFilter(
+            collection_to_filter, lambda key: key
+        )
         assert da.is_collection_filter(my_filter)
 
 

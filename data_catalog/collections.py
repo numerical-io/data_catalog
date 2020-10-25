@@ -329,14 +329,18 @@ class SingleDatasetFilter(ABCCollectionFilter):
 
     """
 
-    def __init__(self, collection):
+    def __init__(self, collection, key_filter):
         """Initialize the collection filter.
 
         Args:
             collection (AbstractCollection): The collection to select an item
               from.
+            key_filter (callable): callable taking as input a single key (from
+              the child collection), and returning the single corresponding key
+              from the parent collection.
         """
         self.collection = collection
+        self.key_filter = key_filter
 
     def filter_by(self, child_key):
         """Return a single dataset from the collection.
@@ -344,7 +348,8 @@ class SingleDatasetFilter(ABCCollectionFilter):
         Args:
             child_key (str): The key of the requested collection item.
         """
-        return self.collection.get(child_key)
+        key = self.key_filter(child_key)
+        return self.collection.get(key)
 
 
 def same_key_in(collection):
@@ -358,4 +363,4 @@ def same_key_in(collection):
     Returns:
         SingleDatasetFilter.
     """
-    return SingleDatasetFilter(collection)
+    return SingleDatasetFilter(collection, lambda key: key)
