@@ -162,6 +162,13 @@ class TestAbstractCollection:
                 class Item(dd.AbstractDataset):
                     pass
 
+    def should_have_proper_repr(self, misc_collection):
+        assert repr(misc_collection) == "test_collections.MyCollection"
+        assert (
+            repr(misc_collection({}))
+            == "test_collections.MyCollection(context)"
+        )
+
 
 class TestValidateKeysMethod:
     def should_be_callable(self):

@@ -53,6 +53,9 @@ class MetaCollection(ABCMetaCollection):
         else:
             raise NotImplementedError()
 
+    def __repr__(self):
+        return self.catalog_path()
+
 
 def _validate_keys_method(keys):
     """Check that the keys method is valid.
@@ -178,6 +181,9 @@ class AbstractCollection(metaclass=MetaCollection):
 
         else:
             raise NotImplementedError()
+
+    def __repr__(self):
+        return self.catalog_path() + "(context)"
 
     def read(self, keys=None):
         """Read a collection or a subset of it.
