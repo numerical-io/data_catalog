@@ -132,6 +132,13 @@ class TestAbstractDataset:
         a = dd.AbstractDataset(context)
         assert a.context == context
 
+    def should_have_proper_repr(self):
+        class MyDataset(dd.AbstractDataset):
+            pass
+
+        assert repr(MyDataset) == "test_datasets.MyDataset"
+        assert repr(MyDataset({})) == "test_datasets.MyDataset(context)"
+
 
 class TestFileDataset:
     def should_infer_missing_relative_path(self, tmpdir):

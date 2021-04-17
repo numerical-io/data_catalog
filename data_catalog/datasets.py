@@ -86,6 +86,9 @@ class MetaDataset(ABCMetaDataset):
         else:
             raise NotImplementedError()
 
+    def __repr__(self):
+        return self.catalog_path()
+
 
 class AbstractDataset(metaclass=MetaDataset):
     """Abstract class for datasets.
@@ -152,6 +155,9 @@ class AbstractDataset(metaclass=MetaDataset):
 
         else:
             raise NotImplementedError()
+
+    def __repr__(self):
+        return self.catalog_path() + "(context)"
 
 
 class MetaFileDataset(MetaDataset):
