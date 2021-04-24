@@ -1,4 +1,5 @@
 from pathlib import Path, PurePath
+import pickle
 
 import pytest
 import pandas as pd
@@ -37,6 +38,17 @@ def misc_collection():
                 return a
 
     return MyCollection
+
+
+class CollectionForPickleTest(dc.AbstractCollection):
+    """For the pickle test to work, this collection must be defined at module
+    level.
+    """
+
+    keys = lambda self: ["key_a", "key_b"]
+
+    class Item(dd.AbstractDataset):
+        pass
 
 
 class TestAbstractCollection:
@@ -87,6 +99,15 @@ class TestAbstractCollection:
         # each item must inherit from the full collection.
         parent_from_item = misc_collection.get("key_a").parents[1]
         assert parent_from_item.name() == "ParentCollection"
+
+    def should_create_pickable_collection_items(self):
+        context = {"a": 1}
+        item = CollectionForPickleTest.get("key_a")(context)
+        pickled_item = pickle.loads(pickle.dumps(item))
+
+        assert pickled_item.catalog_path() == item.catalog_path()
+        assert pickled_item.key == item.key
+        assert pickled_item.context["a"] == item.context["a"]
 
     def should_resolve_collection_filters_for_items(self, misc_collection):
         # If the collection has a collection as parent,
