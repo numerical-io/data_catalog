@@ -107,7 +107,7 @@ class TestAbstractCollection:
 
         assert pickled_item.catalog_path() == item.catalog_path()
         assert pickled_item.key == item.key
-        assert pickled_item.context["a"] == pickled_item.context["a"]
+        assert pickled_item.context["a"] == item.context["a"]
 
     def should_resolve_collection_filters_for_items(self, misc_collection):
         # If the collection has a collection as parent,
