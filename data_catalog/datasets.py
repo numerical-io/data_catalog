@@ -80,11 +80,11 @@ class MetaDataset(ABCMetaDataset):
 
         Note that an object and its class are considered equal.
         """
-        if is_dataset(other) or is_collection(other):
+        if is_dataset(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplementedError()
+            False
 
     def __repr__(self):
         return self.catalog_path()
@@ -150,11 +150,11 @@ class AbstractDataset(metaclass=MetaDataset):
 
         Note that an object and its class are considered equal.
         """
-        if is_dataset(other) or is_collection(other):
+        if is_dataset(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplementedError()
+            False
 
     def __repr__(self):
         return self.catalog_path() + "(context)"

@@ -47,11 +47,11 @@ class MetaCollection(ABCMetaCollection):
 
         Note that an object and its class are considered equal.
         """
-        if is_dataset(other) or is_collection(other):
+        if is_collection(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplementedError()
+            False
 
     def __repr__(self):
         return self.catalog_path()
@@ -68,6 +68,10 @@ def _validate_keys_method(keys):
             )
     else:
         raise TypeError("The keys attribute must be a callable.")
+
+
+def _get_instance(get_class, key, context):
+    return get_class(key)(context)
 
 
 class AbstractCollection(metaclass=MetaCollection):
@@ -165,6 +169,12 @@ class AbstractCollection(metaclass=MetaCollection):
             # not inherited (as set in dataset metaclass)
             "parents": parents,
             "create": cls.Item.create,
+            # enable pickling instances of this dynamically created class,
+            # by providing the following __reduce__ function
+            "__reduce__": lambda self: (
+                _get_instance,
+                (cls.get, self.key, self.context),
+            ),
         }
         return attributes
 
@@ -176,11 +186,11 @@ class AbstractCollection(metaclass=MetaCollection):
 
         Note that an object and its class are considered equal.
         """
-        if is_dataset(other) or is_collection(other):
+        if is_collection(other):
             return self.catalog_path() == other.catalog_path()
 
         else:
-            raise NotImplementedError()
+            False
 
     def __repr__(self):
         return self.catalog_path() + "(context)"
