@@ -19,6 +19,7 @@ def __create_task(dataset, parent_instances, in_memory_data_transfer=False):
         logger.info("CREATE {}".format(dataset.catalog_path()))
         df = dataset.create(*args)
         dataset.write(df)
+        logger.info("DONE {}".format(dataset.catalog_path()))
         return df
 
     def from_storage_task(args):
